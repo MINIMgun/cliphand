@@ -1,4 +1,10 @@
 version: 2
+registries:
+  dhi:
+    type: docker-registry
+    url: dhi.io
+    username: ${{secrets.DHI_USERNAME}}
+    password: ${{secrets.DHI_TOKEN}}
 updates:
   - package-ecosystem: cargo
     directory: /
@@ -37,3 +43,13 @@ updates:
         update-types:
           - minor
           - patch
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    registries:
+      - dhi
+    commit-message:
+      prefix: build
+      include: scope
