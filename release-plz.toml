@@ -1,0 +1,57 @@
+[workspace]
+git_only = true
+release_always = false
+features_always_increment_minor = true
+release_commits = '^(feat|fix|perf|revert|build\(deps\))[(:!]'
+git_release_type = "auto"
+changelog_update = false
+git_tag_enable = false
+git_release_enable = false
+
+[[package]]
+name = "cliphand"
+version_group = "cliphand"
+changelog_update = true
+changelog_path = "CHANGELOG.md"
+changelog_include = ["cliphand-core"]
+git_tag_enable = true
+git_tag_name = "v{{ version }}"
+git_release_enable = true
+git_release_name = "v{{ version }}"
+
+[[package]]
+name = "cliphand-core"
+version_group = "cliphand"
+git_tag_name = "v{{ version }}"
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project will be documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+"""
+body = """
+
+## [{{ version }}]{%- if release_link -%}({{ release_link }}){% endif %} - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim }}
+{% for commit in commits %}
+- {% if commit.scope %}*({{ commit.scope }})* {% endif %}{% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message | upper_first }}
+{%- endfor %}
+{% endfor -%}
+"""
+protect_breaking_commits = true
+sort_commits = "oldest"
+commit_parsers = [
+  { message = "^feat", group = "<!-- 0 -->Features" },
+  { message = "^fix\\(deps\\)", group = "<!-- 2 -->Security Updates" },
+  { message = "^fix", group = "<!-- 1 -->Bug Fixes" },
+  { message = "^perf", group = "<!-- 3 -->Performance Improvements" },
+  { message = "^docs", group = "<!-- 4 -->Documentation" },
+  { message = "^style", group = "<!-- 5 -->Styles" },
+  { message = "^revert", group = "<!-- 6 -->Reverts" },
+  { message = "^build\\(deps\\)", group = "<!-- 7 -->Dependencies" },
+  { message = ".*", skip = true },
+]
