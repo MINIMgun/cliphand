@@ -1,0 +1,27 @@
+# cargo-deny configuration: https://embarkstudios.github.io/cargo-deny/
+# Run locally with `cargo deny check`.
+
+[graph]
+all-features = true
+
+# Known security vulnerabilities and unmaintained crates (RustSec advisory database).
+[advisories]
+version = 2
+yanked = "deny"
+
+# Every dependency's license must be on this list.
+# Add licenses deliberately when a new dependency needs one.
+[licenses]
+version = 2
+allow = ["MIT"]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+# Only crates.io; no random git repositories or other registries.
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
