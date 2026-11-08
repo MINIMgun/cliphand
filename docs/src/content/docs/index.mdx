@@ -1,0 +1,38 @@
+---
+title: cliphand
+description: Headless media ingest for creators. Insert a card, get verified, renamed clips on your storage.
+template: splash
+hero:
+  tagline: Insert a card. cliphand copies, verifies and renames your clips, then gets the card ready for the next shoot.
+  actions:
+    - text: Get started
+      link: /cliphand/getting-started/introduction/
+      icon: right-arrow
+    - text: Feature plan
+      link: /cliphand/getting-started/feature-plan/
+      variant: minimal
+---
+
+import { Aside, Card, CardGrid } from "@astrojs/starlight/components";
+
+<Aside type="caution" title="Early development">
+  cliphand is in its earliest stage and not usable yet. See the [feature
+  plan](/cliphand/getting-started/feature-plan/) for what is coming.
+</Aside>
+
+<CardGrid>
+  <Card title="Headless" icon="laptop">
+    Runs as a background service on Linux, Windows or in Docker. No screen
+    needed.
+  </Card>
+  <Card title="Safe by design" icon="approve-check">
+    Every file is hash-verified at its destination before anything on the card
+    is touched.
+  </Card>
+  <Card title="Organized" icon="document">
+    Clips are renamed and sorted by their metadata, sidecar files stay together.
+  </Card>
+  <Card title="Simple config" icon="setting">
+    One TOML file, optionally edited through a built-in web UI.
+  </Card>
+</CardGrid>

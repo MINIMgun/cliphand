@@ -6,6 +6,10 @@
   "[toml]": {
     "editor.defaultFormatter": "tamasfe.even-better-toml"
   },
+  "[astro][markdown][mdx][javascript][typescript][json][css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "rust-analyzer.check.command": "clippy",
-  "rust-analyzer.check.allTargets": true
+  "rust-analyzer.check.allTargets": true,
+  "eslint.workingDirectories": ["docs"]
 }

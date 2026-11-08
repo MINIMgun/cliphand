@@ -2,7 +2,11 @@
   "recommendations": [
     "rust-lang.rust-analyzer",
     "tamasfe.even-better-toml",
-    "editorconfig.editorconfig"
+    "editorconfig.editorconfig",
+    "astro-build.astro-vscode",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "dbaeumer.vscode-eslint"
   ],
   "unwantedRecommendations": []
 }

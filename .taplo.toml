@@ -1,7 +1,7 @@
 # Shared TOML formatting rules for the VS Code extension (Even Better TOML) and the `taplo` CLI in CI.
 # Reference: https://taplo.tamasfe.dev/configuration/formatter-options.html
 include = ["**/*.toml"]
-exclude = ["target/**"]
+exclude = ["target/**", "**/node_modules/**"]
 
 [formatting]
 align_comments = false

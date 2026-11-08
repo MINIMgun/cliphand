@@ -1,0 +1,42 @@
+@layer base, starlight, theme, components, utilities;
+
+@import "@astrojs/starlight-tailwind";
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-accent-50: oklch(93.842% 0.02305 172.84);
+  --color-accent-100: oklch(91.342% 0.03279 174.92);
+  --color-accent-200: oklch(86.456% 0.05124 172.73);
+  --color-accent-300: oklch(81.372% 0.06811 173.19);
+  --color-accent-400: oklch(76.621% 0.08519 171.24);
+  --color-accent-500: oklch(71.974% 0.10075 170.14);
+  --color-accent-600: oklch(62.445% 0.09535 169.44);
+  --color-accent-700: oklch(50.628% 0.07581 169.62);
+  --color-accent-800: oklch(37.784% 0.05332 171.11);
+  --color-accent-900: oklch(24.049% 0.0297 173.11);
+  --color-accent-950: oklch(16.591% 0.01756 167.77);
+
+  --color-gray-50: oklch(99.329% 0.00106 197.14);
+  --color-gray-100: oklch(96% 0.004 180);
+  --color-gray-200: oklch(90% 0.006 178);
+  --color-gray-300: oklch(80% 0.008 176);
+  --color-gray-400: oklch(66% 0.01 175);
+  --color-gray-500: oklch(52% 0.011 174);
+  --color-gray-600: oklch(40% 0.012 173);
+  --color-gray-700: oklch(31% 0.013 172);
+  --color-gray-800: oklch(23% 0.014 172);
+  --color-gray-900: oklch(19.001% 0.01473 172.08);
+  --color-gray-950: oklch(9.4094% 0.00414 196.47);
+}
+
+/* Unlayered, so it overrides the gray-based mapping from starlight-tailwind. */
+:root {
+  --sl-color-black: oklch(9.4094% 0.00414 196.47);
+  --sl-color-white: oklch(95.354% 0.01034 174.27);
+}
+
+:root[data-theme="light"] {
+  --sl-color-black: oklch(99.329% 0.00106 197.14);
+  --sl-color-white: oklch(19.001% 0.01473 172.08);
+}
