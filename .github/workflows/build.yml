@@ -47,6 +47,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes musl-tools
       - name: Build
         run: cargo build --release --locked --package cliphand --target ${{ matrix.target }}
+      - name: Install cargo-about
+        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          tool: cargo-about
       - name: Package
         shell: bash
         env:
@@ -57,6 +61,8 @@ jobs:
           name="cliphand-${version}-${TARGET}"
           mkdir -p "package/${name}"
           cp README.md LICENSE "package/${name}/"
+          cargo about generate --locked --fail --target "${TARGET}" \
+            --output-file "package/${name}/THIRD-PARTY-LICENSES.md" about.hbs
           if [[ "${TARGET}" == *windows* ]]; then
             cp "target/${TARGET}/release/cliphand.exe" "package/${name}/"
             (cd package && 7z a -bso0 "${name}.zip" "${name}")

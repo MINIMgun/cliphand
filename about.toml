@@ -1,0 +1,4 @@
+accepted = ["MIT", "Unicode-3.0"]
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+private = { ignore = true }

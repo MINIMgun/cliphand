@@ -70,7 +70,7 @@ jobs:
             triple="${pair#*:}-unknown-linux-musl"
             mkdir -p "dist/linux/${arch}"
             tar -xzf artifacts/cliphand-*-"${triple}".tar.gz -C "dist/linux/${arch}" \
-              --strip-components=1 --wildcards '*/cliphand'
+              --strip-components=1 --wildcards '*/cliphand' '*/LICENSE' '*/THIRD-PARTY-LICENSES.md'
           done
       - name: Docker metadata
         id: meta
