@@ -13,7 +13,7 @@ yanked = "deny"
 # Add licenses deliberately when a new dependency needs one.
 [licenses]
 version = 2
-allow = ["MIT"]
+allow = ["MIT", "Unicode-3.0"]
 confidence-threshold = 0.9
 
 [bans]
