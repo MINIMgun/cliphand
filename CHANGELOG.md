@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0](https://github.com/MINIMgun/cliphand/releases/tag/v0.1.0) - 2026-11-09
 
+> [!WARNING]
+> Pre-alpha: this release only verifies the build and release pipeline.
+> cliphand does not ingest any media yet.
+
 ### Features
 
 - Add structured logging with tracing ([#6](https://github.com/MINIMgun/cliphand/pull/6))
