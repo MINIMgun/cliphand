@@ -9,6 +9,10 @@ license = "MIT"
 repository = "https://github.com/MINIMgun/cliphand"
 publish = false
 
+[workspace.dependencies]
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 
