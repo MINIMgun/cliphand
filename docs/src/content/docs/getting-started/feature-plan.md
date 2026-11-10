@@ -42,6 +42,23 @@ independently testable steps. Details will change as the project grows.
 |   📋   | Event-based detection on Windows                                   |
 |   💭   | Event-based detection on macOS                                     |
 |   📋   | Multiple cards at the same time                                    |
+|   📋   | Check on startup that the OS polls card readers for media changes  |
+
+## Readers and slots
+
+By default cliphand only touches card readers that the user has added. Any other storage device is
+ignored, so a USB SSD or a system disk can never be ingested or cleaned by mistake.
+
+| Status | Feature                                                                      |
+| :----: | ---------------------------------------------------------------------------- |
+|   📋   | List detected card readers and their slots                                   |
+|   📋   | Onboarding: insert a card into the reader or slot you want to use, name it   |
+|   📋   | Show configured readers that are currently not connected                     |
+|   📋   | Identify readers by serial number, or by USB port if the serial isn't unique |
+|   💭   | Recognize a known reader on a different USB port and offer to update config  |
+|   💭   | Per-slot profiles: rename pattern and destination depend on the slot         |
+|   💭   | Choose the profile by card label or camera model instead of the slot         |
+|   💭   | Warn when a reader runs slower than it supports (e.g. USB 3 reader at USB 2) |
 
 ## Ingest
 
@@ -52,6 +69,9 @@ independently testable steps. Details will change as the project grows.
 |   📋   | Keep related files together (RAW + JPG, proxies, sidecars) |
 |   📋   | Detect already ingested cards                              |
 |   📋   | Report corrupt or unreadable files                         |
+|   📋   | Tell a pulled card apart from a read error on the card     |
+|   📋   | Read-only access to the card while ingesting               |
+|   💭   | Resume an interrupted ingest when the card is reinserted   |
 
 ## Metadata and renaming
 
@@ -64,13 +84,15 @@ independently testable steps. Details will change as the project grows.
 
 ## Delivery and cleanup
 
-| Status | Feature                                                 |
-| :----: | ------------------------------------------------------- |
-|   📋   | Deliver to a local folder                               |
-|   📋   | Deliver to a network share                              |
-|   📋   | Atomic writes: no half-written files at the destination |
-|   📋   | Verify every delivered file against its hash            |
-|   📋   | Clean the card only after successful verification       |
+| Status | Feature                                                  |
+| :----: | -------------------------------------------------------- |
+|   📋   | Deliver to a local folder                                |
+|   📋   | Deliver to a network share                               |
+|   📋   | Atomic writes: no half-written files at the destination  |
+|   📋   | Verify every delivered file against its hash             |
+|   📋   | Clean the card only after successful verification        |
+|   📋   | Never clean a card the reader reports as write-protected |
+|   📋   | Show which profile matched before the card is cleaned    |
 
 ## Web UI
 
@@ -78,6 +100,7 @@ independently testable steps. Details will change as the project grows.
 | :----: | ------------------------------------------------------------ |
 |   📋   | Optional built-in web server                                 |
 |   📋   | Live status of all cards and ingests                         |
+|   📋   | Add and name card readers and slots (onboarding)             |
 |   📋   | Edit the configuration, changes are written back to the file |
 
 ## Platform
