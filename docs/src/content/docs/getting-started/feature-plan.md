@@ -32,29 +32,38 @@ independently testable steps. Details will change as the project grows.
 |   📋   | Validation with clear, actionable error messages          |
 |   📋   | `check-config` command to validate a file without running |
 |   📋   | Reload on file change                                     |
+|   📋   | `init` command: interactive first setup in the terminal   |
 
 ## Media detection
 
-| Status | Feature                                                            |
-| :----: | ------------------------------------------------------------------ |
-|   📋   | Detect mounted volumes by polling (works everywhere, incl. Docker) |
-|   📋   | Event-based detection on Linux                                     |
-|   📋   | Event-based detection on Windows                                   |
-|   💭   | Event-based detection on macOS                                     |
-|   📋   | Multiple cards at the same time                                    |
-|   📋   | Check on startup that the OS polls card readers for media changes  |
+| Status | Feature                                                                |
+| :----: | ---------------------------------------------------------------------- |
+|   📋   | Detect mounted volumes by polling (works everywhere, incl. Docker)     |
+|   📋   | Event-based detection on Linux                                         |
+|   📋   | Event-based detection on Windows                                       |
+|   💭   | Event-based detection on macOS                                         |
+|   📋   | Multiple cards at the same time                                        |
+|   📋   | Linux: check on startup that card readers are polled for media changes |
+|   💭   | Readers whose slots exist only with a card (CFexpress, built-in SD)    |
+|   💭   | Readers with an internal hub (several USB devices, one reader)         |
 
 ## Readers and slots
 
 By default cliphand only touches card readers that the user has added. Any other storage device is
-ignored, so a USB SSD or a system disk can never be ingested or cleaned by mistake.
+ignored, so a USB SSD or a system disk can never be ingested or cleaned by mistake. An added reader
+is managed exclusively by cliphand until it is released, see
+[Reader ownership](/cliphand/architecture/reader-ownership/).
 
 | Status | Feature                                                                      |
 | :----: | ---------------------------------------------------------------------------- |
 |   📋   | List detected card readers and their slots                                   |
 |   📋   | Onboarding: insert a card into the reader or slot you want to use, name it   |
+|   📋   | Onboarding in the terminal (`cliphand reader add`) and in the web UI         |
 |   📋   | Show configured readers that are currently not connected                     |
 |   📋   | Identify readers by serial number, or by USB port if the serial isn't unique |
+|   📋   | Hide added readers from the desktop, keep them read-only outside cleaning    |
+|   📋   | Restore the state of added readers on startup                                |
+|   📋   | `release` command: return readers to the operating system's defaults         |
 |   💭   | Recognize a known reader on a different USB port and offer to update config  |
 |   💭   | Per-slot profiles: rename pattern and destination depend on the slot         |
 |   💭   | Choose the profile by card label or camera model instead of the slot         |
@@ -71,6 +80,7 @@ ignored, so a USB SSD or a system disk can never be ingested or cleaned by mista
 |   📋   | Report corrupt or unreadable files                         |
 |   📋   | Tell a pulled card apart from a read error on the card     |
 |   📋   | Read-only access to the card while ingesting               |
+|   📋   | Release the card when the user ejects it                   |
 |   💭   | Resume an interrupted ingest when the card is reinserted   |
 
 ## Metadata and renaming
@@ -92,13 +102,14 @@ ignored, so a USB SSD or a system disk can never be ingested or cleaned by mista
 |   📋   | Verify every delivered file against its hash             |
 |   📋   | Clean the card only after successful verification        |
 |   📋   | Never clean a card the reader reports as write-protected |
+|   📋   | Retry deletions blocked by other programs                |
 |   📋   | Show which profile matched before the card is cleaned    |
 
 ## Web UI
 
 | Status | Feature                                                      |
 | :----: | ------------------------------------------------------------ |
-|   📋   | Optional built-in web server                                 |
+|   📋   | Built-in web server, enabled unless disabled during `init`   |
 |   📋   | Live status of all cards and ingests                         |
 |   📋   | Add and name card readers and slots (onboarding)             |
 |   📋   | Edit the configuration, changes are written back to the file |

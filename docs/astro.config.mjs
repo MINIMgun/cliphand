@@ -35,6 +35,10 @@ export default defineConfig({
           items: [
             { label: "Overview", slug: "architecture/overview" },
             { label: "Media detection", slug: "architecture/media-detection" },
+            {
+              label: "Reader ownership",
+              slug: "architecture/reader-ownership",
+            },
           ],
         },
       ],

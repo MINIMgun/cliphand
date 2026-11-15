@@ -3,11 +3,14 @@ title: Media detection
 description: How card readers and cards are represented by the operating system, and the resulting design rules for cliphand.
 ---
 
-This page describes how card readers and cards are represented by the operating system and which
-design rules follow from that for cliphand. It currently covers **Linux**. Windows is not covered
-yet.
+This page describes how card readers and cards are represented by Linux and Windows and which
+design rules follow from that for cliphand. Which readers cliphand acts on, and which changes it
+makes to the system for them, is described in
+[Reader ownership](/cliphand/architecture/reader-ownership/).
 
-## Device structure on Linux
+## Linux
+
+### Device structure
 
 A USB card reader is a single USB device. Each slot is a SCSI logical unit (LUN) with its own block
 device. The block device of a slot exists as long as the reader is connected, regardless of whether
@@ -30,7 +33,7 @@ USB device          2-1             vendor/product, serial, speed
   partition table ("superfloppy") hold the filesystem directly on the slot's block device.
 - Headless systems do not mount cards automatically. cliphand mounts cards itself.
 
-## Events
+### Events
 
 The kernel emits a _uevent_ for every device change. udev enriches it with additional properties
 (filesystem type, UUID, serial number, stable symlinks) and publishes it again. cliphand consumes
@@ -55,18 +58,13 @@ Properties of the event stream:
 - **Removal events.** A `remove` event of a USB device does not include its serial number.
 - **Startup.** Cards that are already inserted when cliphand starts do not produce events.
 
-### Design rules
+Triggers:
 
-1. An event is a trigger only. On every event, cliphand reads the current state and reconciles it
-   with its known state. Processing the same event more than once has no effect.
-2. On startup, cliphand takes a snapshot of all present devices and then follows the event stream.
-3. A card is **ready** when a block device with a filesystem appears below an allowed slot.
-4. A card is **gone** when its slot reports a size of 0, or when the slot itself is removed. The
-   partition `remove` event is not used for this.
-5. cliphand keeps its own record of known devices, insertions and jobs, and resolves removals
-   against it.
+- A card is **ready** when a block device with a filesystem appears below an allowed slot.
+- A card is **gone** when its slot reports a size of 0, or when the slot itself is removed. The
+  partition `remove` event is not used for this.
 
-## Identifiers
+### Identifiers
 
 | Identifier                      | Identifies | Stability                                                                      |
 | ------------------------------- | ---------- | ------------------------------------------------------------------------------ |
@@ -75,20 +73,11 @@ Properties of the event stream:
 | USB port path (`by-path`)       | Reader     | Stable while the reader stays on the same port and controller.                 |
 | LUN                             | Slot       | Stable, defined by the firmware.                                               |
 | Partition UUID                  | Card       | Not reliable, often `00000000-01`.                                             |
-| Filesystem UUID (volume serial) | Card       | Stable until the card is formatted.                                            |
+| Filesystem UUID (volume serial) | Card       | Stable until the card is formatted. Not guaranteed to be unique.               |
 | Filesystem label                | Card       | Often not set.                                                                 |
 | `DISKSEQ`                       | Insertion  | Unique per media change until reboot. Changes on insertion and removal.        |
 
-cliphand uses the following identities:
-
-| Entity    | Identity                                                       |
-| --------- | -------------------------------------------------------------- |
-| Reader    | USB serial number, or USB port path if the serial isn't unique |
-| Slot      | Reader + LUN                                                   |
-| Card      | Filesystem UUID                                                |
-| Insertion | `DISKSEQ`                                                      |
-
-## Media change polling
+### Media change polling
 
 USB card readers do not notify the host about inserted or removed cards. The kernel detects media
 changes by polling each slot. Polling is disabled by default in the kernel and enabled by systemd's
@@ -99,7 +88,7 @@ slot is accessed.
 - cliphand checks the polling setting on startup and reports a missing configuration. This is
   relevant on systems without systemd, such as minimal images, containers and embedded systems.
 
-## Mounting
+### Mounting
 
 A mount persists after its card has been removed. When a card is inserted into the same slot again,
 the existing mount becomes accessible again. If a different card is inserted, the mount reads it
@@ -110,17 +99,158 @@ with the cached metadata of the previous card, and a writable mount can corrupt 
 - Every insertion gets a new mount. Mounts are never reused.
 - On startup, cliphand removes leftover mounts from previous runs.
 
-## Read errors
+### Read errors
 
 When a card is removed during a copy, the read fails with an I/O error about one second before the
 media change event arrives. A damaged card produces the same I/O error. The underlying cause
 (e.g. "medium not present") is only available in the kernel log.
 
-After an I/O error, cliphand checks the slot:
+## Windows
 
-- **Medium gone:** the card was removed. The job is stopped.
-- **Medium present:** the file is unreadable. It is reported as corrupt and the remaining files are
-  processed.
+### Device structure
+
+Windows represents a USB card reader as a tree of device nodes. Each slot has its own disk and its
+own volume. Both exist as long as the reader is connected, regardless of whether a card is
+inserted. Example of a two-slot reader:
+
+```
+USB device   USB\VID_05E3&PID_0764\000000002960              driver USBSTOR, port, container ID
+├─ disk      USBSTOR\Disk&…\000000002960&0     Disk 4         slot 1, "No Media" while empty
+│  └─ volume STORAGE\Volume\_??_USBSTOR#…&0    E:             filesystem while a card is inserted
+└─ disk      USBSTOR\Disk&…\000000002960&1     Disk 5         slot 2
+   └─ volume STORAGE\Volume\_??_USBSTOR#…&1    F:             size 0 while empty
+```
+
+- The LUN is the suffix of the disk's instance ID (`&0`, `&1`).
+- The volume belongs to the slot, not to the card. Its volume GUID and drive letter stay the same
+  when a different card is inserted.
+- The USB serial number is part of the reader's instance ID. Windows treats it as unique, also when
+  the reader reports the same value on every unit.
+- Readers using the UAS driver are not enumerated below `USBSTOR`. Device paths are not used to
+  recognize readers.
+- Explorer, AutoPlay and the search indexer access every volume that has a drive letter. Windows
+  creates a `System Volume Information` folder on a card the first time it is mounted.
+
+### Events
+
+Insertion and removal of a card produce no device events. They are reported only to applications
+that hold an open handle to the slot's disk or volume and register for notifications on it.
+cliphand therefore subscribes on two levels:
+
+- **Device notifications** (`CM_Register_Notification` for device instances and interfaces) for
+  readers, slots and volumes being added and removed.
+- **Handle notifications** (`CM_Register_Notification` on an open handle per slot disk and volume)
+  for media changes, mounts and lock requests.
+
+| Situation           | Notifications                                                                      |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Reader connected    | Instances enumerated and started from the USB device down to the volumes           |
+| Card inserted       | `MEDIA_ARRIVAL` on the disk, layout changes, `VOLUME_MOUNT` on the volume          |
+| Card removed        | `MEDIA_REMOVAL` on the disk, layout changes                                        |
+| Card ejected        | `VOLUME_LOCK` and `VOLUME_UNLOCK` on the volume, then `MEDIA_REMOVAL`              |
+| Reader disconnected | `REMOVE_COMPLETE` on all handles, interface and instance removals, no query before |
+
+Properties of the notifications:
+
+- **Duplicates.** A single insertion produces several layout change and mount notifications.
+- **Ordering.** The order across devices is not fixed.
+- **Self-triggered notifications.** Opening an empty slot or querying its medium makes Windows read
+  the disk layout again and produces a layout change notification. Reacting to layout changes with
+  a medium query creates a loop.
+- **Window messages and WMI.** `WM_DEVICECHANGE` and `Win32_VolumeChangeEvent` report readers being
+  connected and disconnected, but not card changes. They are also not available to services.
+- **Startup.** Cards that are already inserted when cliphand starts do not produce notifications.
+
+Triggers:
+
+- A card is **ready** after `MEDIA_ARRIVAL` on its slot, once the slot's volume is mounted with a
+  filesystem.
+- A card is **gone** after `MEDIA_REMOVAL` on its slot, or when the slot is removed.
+
+### Eject requests
+
+Ejecting a card through Explorer or "Safely remove hardware" ejects the medium, not the reader. The
+reader and its slots remain present. Windows sends `VOLUME_LOCK` before it attempts to lock the
+volume. An application that still has files open on the volume makes the lock fail, and the user
+receives a "device in use" message.
+
+- cliphand treats `VOLUME_LOCK` as a request to release the card. It stops the job of that card and
+  closes all of its handles on the volume.
+- Handles opened only for notifications do not block an eject.
+
+### Identifiers
+
+| Identifier                                     | Identifies | Stability                                                                           |
+| ---------------------------------------------- | ---------- | ----------------------------------------------------------------------------------- |
+| Disk number                                    | –          | Not stable. Depends on the other connected devices.                                 |
+| Instance ID of the USB device                  | Reader     | Contains the serial number. Without a serial number, it is derived from the port.   |
+| Location path (`DEVPKEY_Device_LocationPaths`) | Reader     | Stable while the reader stays on the same port and controller.                      |
+| Container ID                                   | Reader     | Shared by all device nodes of the reader.                                           |
+| LUN (instance ID suffix)                       | Slot       | Stable, defined by the firmware.                                                    |
+| Volume GUID, drive letter                      | Slot       | Stable for the slot. Not related to the card.                                       |
+| MBR disk signature                             | Card       | Not reliable, often `00000000`.                                                     |
+| Volume serial number                           | Card       | Stable until the card is formatted. Not guaranteed to be unique, can be `00000000`. |
+| Volume label                                   | Card       | Often not set.                                                                      |
+
+There is no identifier for a single insertion. cliphand assigns its own insertion ID when it
+observes a card arriving.
+
+### Media detection
+
+Windows polls removable-media slots itself. Card detection takes less than one second and requires
+no configuration.
+
+### Mounting and access
+
+Windows mounts the filesystem of a card automatically. A drive letter is not required: a volume
+is accessible through its volume path (`\\?\Volume{GUID}\`).
+
+- **Read-only.** The disk of a slot can be set read-only (`Set-Disk -IsReadOnly`). Writes fail
+  with "The media is write protected". Changing the setting dismounts and remounts the volume, so
+  all open handles become invalid. The setting is stored per slot and persists across card changes
+  and reconnects of the reader. Administrator rights are required.
+- **Drive letter.** The drive letter of a slot's volume can be removed (`mountvol /D`). The removal
+  is stored per slot and persists across card changes and reconnects of the reader. A volume
+  without a drive letter is not shown by Explorer and not reported by WMI or window messages. Handle
+  notifications are not affected. Administrator rights are required.
+- **Open handles after removal.** When a card is removed, Windows keeps the volume of every open
+  file. When a card with the same volume serial number is inserted, the existing handles become
+  valid again, also if a different card was inserted in between. A card with a different volume
+  serial number makes the handles fail with `ERROR_WRONG_DISK`. Two cards with the same volume
+  serial number are therefore not told apart.
+- **Concurrent access.** Other programs, such as antivirus software and the search indexer, open
+  newly written files on a card. Deleting a file can fail temporarily because it is in use.
+
+### Read errors
+
+When a card is removed during a copy, the media removal notification arrives before the read fails.
+The error code indicates the cause:
+
+| Situation               | Error                                                          |
+| ----------------------- | -------------------------------------------------------------- |
+| Card removed            | `ERROR_NOT_READY` (21)                                         |
+| Different card inserted | `ERROR_WRONG_DISK` (34)                                        |
+| Reader disconnected     | `ERROR_NO_SUCH_DEVICE` (433), then `ERROR_FILE_INVALID` (1006) |
+| Damaged card            | Not verified                                                   |
+
+## Design rules
+
+1. An event is a trigger only. On every event, cliphand reads the current state and reconciles it
+   with its known state. Processing the same event more than once has no effect.
+2. On startup, cliphand takes a snapshot of all present devices and then follows the event stream.
+3. cliphand keeps its own record of known devices, insertions and jobs, and resolves removals
+   against it.
+4. Cards are accessed read-only while ingesting and writable only for cleaning.
+5. When a card is gone, cliphand stops its job and releases all mounts and handles. Every insertion
+   gets new mounts and handles. Mounts and handles are never reused across insertions.
+6. On startup, cliphand removes leftovers of previous runs, such as mounts, and restores the state
+   of its slots.
+7. The order of read errors and removal events differs between operating systems and is not relied
+   on. After an I/O error, cliphand checks the slot:
+   - **Medium gone:** the card was removed. The job is stopped.
+   - **Medium present:** the file is unreadable. It is reported as corrupt and the remaining files
+     are processed.
+8. Deleting files on a card is retried when it fails because another program has the file open.
 
 ## Hardware characteristics
 
@@ -137,14 +267,17 @@ After an I/O error, cliphand checks the slot:
 
 ### Domain concepts
 
-| Concept   | Description                                                    |
-| --------- | -------------------------------------------------------------- |
-| Reader    | A card reader added by the user, with a name and a fingerprint |
-| Slot      | Reader + LUN, with a name                                      |
-| Card      | Identified by its filesystem UUID                              |
-| Insertion | One card in one slot, from insertion to removal                |
-| Profile   | Rename pattern, destination, cleaning policy                   |
-| Binding   | Assignment of a profile, e.g. to a slot, ordered by priority   |
+| Concept   | Description                                                                      |
+| --------- | -------------------------------------------------------------------------------- |
+| Reader    | A card reader added by the user, with a name and a fingerprint                   |
+| Slot      | Reader + LUN, with a name                                                        |
+| Card      | Identified by volume serial number, label and size                               |
+| Insertion | One card in one slot, from insertion to removal, with an ID assigned by cliphand |
+| Profile   | Rename pattern, destination, cleaning policy                                     |
+| Binding   | Assignment of a profile, e.g. to a slot, ordered by priority                     |
+
+The reader fingerprint consists of vendor ID, product ID, revision, serial number, number of LUNs
+and the port path.
 
 ### Reader reconciliation
 
@@ -161,8 +294,14 @@ reader are not ingested.
 
 ### Adapters
 
-The Linux adapter provides a snapshot of the present devices and a stream of change notifications,
-reads device attributes from sysfs, and mounts and unmounts cards. It does not make decisions.
+An adapter per operating system provides a snapshot of the present readers, slots and media as a
+tree (reader, slots, media) and a stream of change notifications. It reads device attributes, opens
+and closes cards, and applies the system changes described in
+[Reader ownership](/cliphand/architecture/reader-ownership/). It does not make decisions.
+
+- **Linux:** udev events, sysfs attributes, own mounts.
+- **Windows:** device and handle notifications, device properties, volume paths. The adapter keeps
+  one handle per slot disk and volume open and closes it when the device is removed.
 
 ### Configuration
 
@@ -171,7 +310,12 @@ and are written back by the web UI. cliphand keeps no additional persistent stat
 
 ## Open points
 
-- Device representation and events on Windows.
+- Reader types other than USB readers with removable media, such as CFexpress readers, built-in SD
+  readers and readers with an internal hub.
+- Two identical readers connected at the same time on Windows: how Windows resolves the duplicate
+  instance ID.
+- Error codes of a damaged card on Linux and Windows.
+- Cards with several partitions.
 - Docker: access to the host's udev data for reader identification (mounting `/run/udev`), or
   mounting by the host with cliphand watching a directory.
 - Resuming an interrupted ingest versus restarting it when a card is inserted again.
