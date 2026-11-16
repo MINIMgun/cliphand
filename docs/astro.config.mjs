@@ -32,7 +32,14 @@ export default defineConfig({
         },
         {
           label: "Architecture",
-          items: [{ label: "Overview", slug: "architecture/overview" }],
+          items: [
+            { label: "Overview", slug: "architecture/overview" },
+            { label: "Media detection", slug: "architecture/media-detection" },
+            {
+              label: "Reader ownership",
+              slug: "architecture/reader-ownership",
+            },
+          ],
         },
       ],
       customCss: ["./src/styles/global.css"],
